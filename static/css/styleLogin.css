@@ -1,0 +1,71 @@
+html, body{
+    width: 100%
+    height: 100%
+}
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+.card {
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+}
+#header{
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 300;
+    background: #021124;
+    overflow-y: auto;
+    width: 100%;
+    transition: all ease-in-out 0.5s;
+    padding: 0 15px;
+    z-index: 9997;
+    background: #333;
+}
+
+.nav-link{
+    color: #999;
+}
+.nav-link:hover{
+    color: #00ff00;
+}
+.btn.btn-primary{
+     background-color: #333;
+     height: 25px;
+     display: flex;
+     align-items: center;
+     border: 0px;
+}
+.btn.btn-primary:hover{
+     color: #00ff00;
+}
+.link-container {
+    font-size: 12px;
+    text-align: left;
+    margin-left: 10px;
+}
+.link-container a {
+    text-decoration: none;
+    color: #007bff;
+}
+.link-container a:hover {
+    text-decoration: none;
+    color: #00ff00;
+}
+
+@keyframes gradientAnimation {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
