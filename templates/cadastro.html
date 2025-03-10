@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../static/bootstrap/css/bootstrap.css">
     <link rel="icon" type="image/png" href="../static/imagens/iconeSite.png">
-    <link rel="stylesheet" href="../static/css/menuSuperior.css">
+    <link rel="stylesheet" href="../static/css/styleLogin.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-    <title>Cadastro de conta</title>
+    <title>Cadastro de usuário</title>
 </head>
 <body class="bg-light">
 
@@ -19,7 +19,7 @@
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
                     <ul class="navbar-nav mr-auto">
                         <li class="nav-item">
-                            <a class="nav-link" href="/home">Área de Eventos</a>
+                            <a class="nav-link" href="/chatvisitante">ChatBot</a>
                         </li>
                     </ul>
                 </div>
@@ -27,19 +27,11 @@
         </section>
     </aside>
 
-    <h1 class="text-center">Cadastro de conta</h1>
+    <h1 class="text-center">Cadastro</h1>
     <form method="POST" action="/cadastro">
         <div class="mb-3">
             <label for="nome">Nome:</label>
             <input type="text" placeholder="Ex. Osvaldo da Cruz Palmito" id="nome" name="nome" class="form-control" required>
-        </div>
-        <div class="mb-3">
-            <label for="prontuario">Prontuario:</label>
-            <input type="text" placeholder="ex. PE3006842" id="prontuario" name="prontuario" class="form-control" required>
-        </div>
-        <div class="mb-3">
-            <label for="cpf">CPF:</label>
-            <input type="text" placeholder="ex. 47965242591" id="cpf" name="cpf" class="form-control" required>
         </div>
         <div class="mb-3">
             <label for="email">Email:</label>

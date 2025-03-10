@@ -1,5 +1,5 @@
-from conectarbanco import *
 import re
+from backend.dao.persistence import Banco
 
 '''
 ' OR '1'='1
@@ -8,57 +8,31 @@ class Controle:
 
     def __init__(self):
         self.ob = Banco()
-        self.ob.configura(ho="localhost", db="db_evento", us="root", se="ifsp")
+        self.ob.configura(ho="localhost", db="db_chatbot", us="root", se="ifsp")
 
-    def verificar_login(self, prontuario, senha):
-        prontuario = re.sub(r'[^a-zA-Z0-9@._-]', '', prontuario)
-        prontuario = prontuario.replace("'", "''")
+    def verificar_login(self, email, senha):
+        mail = re.sub(r'[^a-zA-Z0-9@._-]', '', email)
+        mail = mail.replace("'", "''")
 
         senha = re.sub(r'[^a-zA-Z0-9@._-]', '', senha)
         senha = senha.replace("'", "''")
 
         self.ob.abrirConexao()
-        sql = f"select * from participante where prontuario = '{prontuario}' and senha = '{senha}'"
+        sql = f"select * from usuario where email = '{mail}' and senha = '{senha}'"
         resultado = []
         resultado = self.ob.selectQuery(sql)
 
         if resultado:
             return resultado
         else:
-            sql = f"select * from participante where cpf = '{prontuario}' and senha = '{senha}'"
-            resultado = self.ob.selectQuery(sql)
-
-            if resultado:
-                return resultado
-            else:
-                return None
-    def verifica_nivel(self, prontuario):
-        prontuario = re.sub(r'[^a-zA-Z0-9@._-]', '', prontuario)
-
-        prontuario = prontuario.replace("'", "''")
-        self.ob.abrirConexao()
-        sql = f"select nivel_acesso from participante where prontuario = '{prontuario}'"
-        resultado = self.ob.selectQuery(sql)
-
-        if resultado:
-            nivel_usuario = resultado[0][0]
-            return nivel_usuario
-        else:
-            sql = f"select nivel_acesso from participante where cpf = '{prontuario}'"
-            resultado = self.ob.selectQuery(sql)
-
-            if resultado:
-                nivel_usuario = resultado[0][0]
-                return nivel_usuario
-            else:
-                return None
+            return None
 
     def verificar_email(self, email):
         email = re.sub(r'[^a-zA-Z0-9@._-]', '', email)
 
         email = email.replace("'", "''")
         self.ob.abrirConexao()
-        sql = f"select email from participante where email = '{email}'"
+        sql = f"select email from usuario where email = '{email}'"
         resultado = self.ob.selectQuery(sql)
         if resultado:
             email = resultado[0][0]
@@ -66,9 +40,9 @@ class Controle:
         else:
             return None
 
-    def inserir_participante(self):
+    def inserir_usuario(self):
         self.ob.abrirConexao()
-        sql = f"select count(*)+1 from participante"
+        sql = f"select count(*)+1 from usuario"
         resultado = self.ob.selectQuery(sql)
         quantidade = resultado[0][0]
         if resultado:
@@ -76,9 +50,9 @@ class Controle:
         else:
             return None
 
-    def inserir_semana(self):
+    def inserir_chat(self):
         self.ob.abrirConexao()
-        sql = f"select count(*)+1 from semana"
+        sql = f"select count(*)+1 from chat"
         resultado = self.ob.selectQuery(sql)
         quantidade = resultado[0][0]
         if resultado:
@@ -86,9 +60,9 @@ class Controle:
         else:
             return None
 
-    def inserir_palestrante(self):
+    def inserir_mensagem(self):
         self.ob.abrirConexao()
-        sql = f"select count(*)+1 from palestrante"
+        sql = f"select count(*)+1 from mensagem"
         resultado = self.ob.selectQuery(sql)
         quantidade = resultado[0][0]
         if resultado:
@@ -96,98 +70,51 @@ class Controle:
         else:
             return None
 
-    def inserir_evento(self):
+    def buscar_usuario(self):
         self.ob.abrirConexao()
-        sql = f"select count(*)+1 from evento"
-        resultado = self.ob.selectQuery(sql)
-        quantidade = resultado[0][0]
-        if resultado:
-            return quantidade
-        else:
-            return None
-
-    def buscar_palestrantes(self):
-        self.ob.abrirConexao()
-        sql = f"select * from palestrante"
+        sql = f"select * from usuario"
         resultado = []
         resultado = self.ob.selectQuery(sql)
         if resultado:
-            palestrantes = resultado
-            return palestrantes
+            return resultado
         else:
             return None
 
-    def buscar_eventos(self):
+    def buscar_chats(self, idusuario):
         self.ob.abrirConexao()
-        sql = f"select * from evento"
-        resultado = []
+        sql = f"select * from chat where idusuario= '{idusuario}'"
         resultado = self.ob.selectQuery(sql)
         if resultado:
-            eventos = resultado
-            return eventos
+            print(resultado)
+            return resultado
         else:
             return None
 
-    def buscar_semanas(self):
+    def checar_chats(self, idchat):
         self.ob.abrirConexao()
-        sql = f"select * from semana"
-        resultado = []
+        sql = f"select * from chat where idchat= '{idchat}'"
         resultado = self.ob.selectQuery(sql)
         if resultado:
-            semanas = resultado
-            return semanas
+            print(resultado)
+            return resultado
         else:
             return None
 
-    def buscar_idsemana(self, semana):
+    def buscar_msg(self, idchat):
         self.ob.abrirConexao()
-        sql = f"select idsemana from semana where idsemana= '{semana[0]}'"
+        sql = f"select * from mensagem where idchat= '{idchat}'"
         resultado = self.ob.selectQuery(sql)
         if resultado:
-            idsemana = resultado
-            return idsemana
+            return resultado
         else:
             return None
 
-    def buscar_semana(self, semana):
+    def buscar_ultima_msg(self, idchat):
         self.ob.abrirConexao()
-        sql = f"select * from semana where idsemana= '{semana[0]}'"
-        resultado = []
+        sql = f"select conteudo from mensagem where idchat = '{idchat}' and origem = 1 order by idmensagem desc limit 1"
         resultado = self.ob.selectQuery(sql)
         if resultado:
-            idsemana = resultado
-            return idsemana
-        else:
-            return None
-
-    def buscar_idpalestrante(self, palestrante):
-        self.ob.abrirConexao()
-        sql = f"select idpalestrante from palestrante where idpalestrante= '{palestrante[0]}'"
-        resultado = self.ob.selectQuery(sql)
-        if resultado:
-            idpalestrante = resultado
-            return idpalestrante
-        else:
-            return None
-
-    def buscar_participantes(self):
-        self.ob.abrirConexao()
-        sql = f"select * from participante"
-        resultado = []
-        resultado = self.ob.selectQuery(sql)
-        if resultado:
-            semanas = resultado
-            return semanas
-        else:
-            return None
-
-    def buscar_ideventos(self, semana):
-        self.ob.abrirConexao()
-        sql = f"select * from evento where idsemana= '{semana[0]}'"
-        resultado = self.ob.selectQuery(sql)
-        if resultado:
-            res = resultado
-            return res
+            return resultado
         else:
             return None
     def incluir(self, info):
@@ -202,7 +129,7 @@ class Controle:
             print("Houve um erro")
             self.ob.descarte()
 
-    def procuraRegistro(self, info):
+    def pesquisar(self, info):
         self.ob.abrirConexao()
         dados = self.ob.selectQuery(info)
         dados = dados[0]
@@ -210,7 +137,7 @@ class Controle:
 
     def excluir(self, info):
         self.ob.abrirConexao()
-        sql = info.excluir()
+        sql = info
         try:
             self.ob.execute(sql)
             self.ob.gravar()
@@ -220,7 +147,7 @@ class Controle:
 
     def alterar(self, info):
         self.ob.abrirConexao()
-        sql = info.alterar()
+        sql = info
         try:
             self.ob.execute(sql)
             self.ob.gravar()

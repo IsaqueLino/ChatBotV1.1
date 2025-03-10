@@ -10,10 +10,18 @@ from backend.model.mensagem import Mensagem
 from datetime import datetime
 
 from dotenv import load_dotenv
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage
 from langchain_core.output_parsers import StrOutputParser
 from langchain_anthropic import ChatAnthropic
+from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
+
+from langchain_community.agent_toolkits.sql.toolkit import SQLDatabaseToolkit
+from langchain_community.utilities.sql_database import SQLDatabase
+from sqlalchemy import create_engine
+from langchain import hub
+from langgraph.prebuilt import create_react_agent
 
 import secrets
 import os
@@ -27,34 +35,74 @@ usuario = Usuario()
 chat = Chat()
 mensagem = Mensagem()
 
+
+def get_engine_for_mysql_db():
+    user = 'root'
+    password = 'ifsp'
+    host = 'localhost'
+    database = 'fazenda'
+
+    engine = create_engine(f"mysql+pymysql://{user}:{password}@{host}/{database}")
+
+    return engine
+
+
+engine = get_engine_for_mysql_db()
+
+db = SQLDatabase(engine)
+
 load_dotenv()
 key_api = os.getenv("CLAUDE_KEY_API")
+model = ChatOpenAI(model="gpt-3.5-turbo", api_key=key_api)
 
-model2 = ChatAnthropic(model="claude-3-5-sonnet-20240620", api_key=key_api)
+'''model = ChatAnthropic(model="claude-3-5-sonnet-20240620", api_key=key_api)'''
 parser = StrOutputParser()
 
-template_unificado = ChatPromptTemplate.from_messages([
-    ("system", "Essa informação é sobre protocolos de inseminação para gado de corte ou leite. "
-               "Apenas responda perguntas referentes a esse tipo de assunto. "
-               "Caso venha algo fora desse contexto, apenas diga que não é capaz de informar sobre aquilo. "
-               "Além disso, conversar em ptbr usando esse histórico como contexto e "
-               "para continuar a conversa sem a perda de informações "
-               "(é para parecer natural sem citar que você recebeu essas informações, "
-               "a menos que fale a palavra chave: razen, aí você pode falar sobre o histórico sem problemas): "
-               "{protocolo} {historic}"),
+template1 = ChatPromptTemplate.from_messages([
+    ("system", f"Analise o bando de dados {db.get_table_info()} e verifique se o prompt do usuario"
+               f" é uma consulta para o banco de dados da fazenda "
+               "ANALIZE o historico para verificar se o prompt atual é uma continuação da pergunta"
+               "do prompt anterior referente a base de dados da fazenda exemplo: quantos bois são da raça nelore"
+               " prompt2: gir, sempre verifique se o prompt é uma tentativa de conseguir alguma informação da "
+               "base de dados da fazenda então sempre analize ela para ter certeza."
+               " Se sim responda ESTRITAMENTE e SOMENTE 'SIM' caso contrario responda somente"
+               " 'NAO' nada além dessas duas palavras"
+               "{historico}"),
+    ("user", "{texto}"),
+])
+template2 = ChatPromptTemplate.from_messages([
+    ("system", "Converse em português (pt-BR) usando o histórico abaixo como contexto. "
+               "Sua resposta deve continuar a conversa sem perder informações anteriores, "
+               "mantendo um tom natural e **sem usar emojis**. Não mencione que recebeu essas informações, "
+               "a menos que a palavra-chave 'razen' seja mencionada. Nesse caso, você pode discutir o histórico. "
+               "Se a pergunta do usuário estiver relacionada ao banco de dados da fazenda, "
+               f"faça uma consulta nesse banco: {db.get_table_info()}. "
+               "O historico de conversa: {historico}"),
+    ("user", "{texto}"),
+])
+template3 = ChatPromptTemplate.from_messages([
+    ("system", "Com base no histórico de conversa, verifique se o prompt recebido do usuário "
+               "é coerente para gerar uma consulta SQL. Se não for coerente, reformule a pergunta de modo que possa "
+               "ser utilizada em uma consulta SQL. Retorne **apenas** a pergunta reformulada"
+               " sem qualquer texto adicional. "
+               "Exemplo: (prompt: Fevereiro, última mensagem no contexto: quais as vendas de janeiro, "
+               "então a pergunta reformulada é: quais as vendas de fevereiro). {historico}"),
     ("user", "{texto}"),
 ])
 
-chain = template_unificado | model2 | parser
+chain1 = template1 | model | parser
+chain2 = template2 | model | parser
+chain3 = template3 | model | parser
 
+toolkit = SQLDatabaseToolkit(db=db, llm=model)
 
+prompt_template = hub.pull("langchain-ai/sql-agent-system-prompt")
 
-genai.configure(api_key="")
+system_message = prompt_template.format(dialect="PyMySQL", top_k=1)
 
-'''model = genai.GenerativeModel('gemini-1.5-flash')'''
-model = genai.GenerativeModel('gemini-pro')
-
-chatGemini = model.start_chat(history=[])
+agent_executor = create_react_agent(
+    model, toolkit.get_tools(), state_modifier=system_message
+)
 
 
 @app.route('/')
@@ -106,11 +154,6 @@ def cadastro():
     return render_template('cadastro.html')
 
 
-@app.route('/chatvisitante')
-def chatvisitante():
-    return render_template('chatvisitante.html')
-
-
 @app.route('/chatbot')
 def chatbot():
     if 'usuario_logado' in session:
@@ -120,7 +163,8 @@ def chatbot():
         if chats is None:
             chats = []
 
-        return render_template('chatbot.html', usuario=usuariologado, chats=chats, quantidade=quantidadechat, chat_id=0)
+        return render_template('chatbot.html', usuario=usuariologado, chats=chats,
+                               quantidade=quantidadechat, chat_id=0)
     else:
         return render_template('chatvisitante.html')
 
@@ -211,7 +255,7 @@ def save_message():
 
     try:
         historico = controle.buscar_msg(chat_id)
-        protocolos = controleF.buscar_protocolos()
+
         mensagem.idmensagem = controle.inserir_mensagem()
         mensagem.conteudo = content
         mensagem.origem = origin
@@ -220,15 +264,45 @@ def save_message():
         newmsg = mensagem.inserirDados()
         controle.incluir(newmsg)
 
-        texto = chain.invoke({"protocolo": protocolos, "historic": historico, "texto": content})
+        texto1 = chain1.invoke({"historico": historico, "texto": content})
+        print("chain1: " + texto1)
+
+        if texto1.strip().upper() == "SIM":
+            texto3 = chain3.invoke({"historico": historico, "texto": content})
+            print("chain3: " + texto3)
+            events = agent_executor.invoke({"messages": [("user", texto3)]})
+            print(events)
+
+            def extract_text_from_message(message):
+                if isinstance(message, AIMessage):
+                    if isinstance(message.content, str):
+                        return message.content
+                    elif isinstance(message.content, list):
+                        return ''.join(part.get('text', '') for part in message.content)
+                return ""
+
+            last_ai_message = None
+            for msg in events.get('messages', []):
+                if isinstance(msg, AIMessage):
+                    last_ai_message = msg
+
+            if last_ai_message:
+                extracted_text = extract_text_from_message(last_ai_message)
+                mensagem.conteudo = extracted_text.replace("'", "\\'")
+        else:
+            texto2 = chain2.invoke({"historico": historico, "texto": content})
+            print("chain2: " + texto2)
+            mensagem.conteudo = texto2.replace("'", "\\'")
+
         mensagem.idmensagem = controle.inserir_mensagem()
-        mensagem.conteudo = texto
         mensagem.origem = originbot
         mensagem.idchat = chat_id
         mensagem.data = datetime.now().date()
         newmsg = mensagem.inserirDados()
         controle.incluir(newmsg)
+
     except Exception as e:
+        print(f"Erro no save_message: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
     return jsonify({'status': 'success'}), 200

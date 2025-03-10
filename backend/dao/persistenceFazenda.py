@@ -1,13 +1,13 @@
 import pymysql
 
 
-class Banco:
+class BancoFazenda:
 
     def __init__(self):
         self.servidor = "localhost"
         self.usuario = "root"
         self.senha = "ifsp"
-        self.banco = "db_chatbot"
+        self.banco = "fazenda"
         self.ponteiro = ""
 
     def abrirConexao(self):

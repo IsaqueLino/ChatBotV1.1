@@ -122,12 +122,10 @@ document.getElementById("chat-input").addEventListener('keydown', (event) => {
 
 document.querySelectorAll('.bi-pencil').forEach(icon => {
     icon.addEventListener('click', (event) => {
-        // Verifique se o ícone é de exclusão
         if (icon.classList.contains('bi-trash')) {
             const chatId = icon.closest('li').dataset.chatId;
             enableDelete(icon, chatId);
         } else {
-            // Verifique se o ícone é de edição
             const chatId = icon.closest('li').dataset.chatId;
             enableEditing(icon, chatId);
         }

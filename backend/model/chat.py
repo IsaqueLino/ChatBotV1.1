@@ -64,13 +64,13 @@ class Chat:
         print(sql)
         return sql
 
-        def deletar(self):
-            sql = ("delete from chat where idchat = '{}' and idusuario = '{}'".format(
-                self.idchat,
-                self.idusuario
-            ))
-            print(sql)
-            return sql
+    def deletar(self):
+        sql = ("delete from chat where idchat = '{}' and idusuario = '{}'".format(
+            self.idchat,
+            self.idusuario
+        ))
+        print(sql)
+        return sql
 
     def buscar(self):
         sql = "select count(*)+1 from chat"

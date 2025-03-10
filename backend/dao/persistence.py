@@ -26,7 +26,7 @@ class Banco:
         self.ponteiro.execute(entrada)
 
     def gravar(self):
-        self.con.commit();
+        self.con.commit()
 
     def descarte(self):
         self.con.rollback()
